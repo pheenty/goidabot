@@ -1,0 +1,8 @@
+__pycache__
+.dockerignore
+.env
+.gitignore
+README.md
+TEMPLATE.env
+prompts.json
+venv
