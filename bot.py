@@ -59,7 +59,9 @@ def setpromptbeh(prompt, server):
 
 async def askai(channel): # GOIDA
     messages = [msg async for msg in channel.history(limit=context)]
-    async with channel.typing(), aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60)) as session, session.post("https://api.deepseek.com/v1/chat/completions", headers={"Authorization": f"Bearer {ai_token}"}, json={"model": "deepseek-chat", "messages": [{"role": "user", "content": prompts.get(str(channel.guild.id), default_prompt) + prompt_end + "\n".join(f"{msg.author.display_name} ({msg.author.id}): {msg.content}" for msg in reversed(messages))}]}) as response: return (await response.json())["choices"][0]["message"]["content"]
+    try:
+        async with channel.typing(), aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60)).post("https://api.deepseek.com/v1/chat/completions", headers={"Authorization": f"Bearer {ai_token.strip()}"}, json={"model": "deepseek-chat", "messages":[{"role": "user", "content": prompts.get(str(channel.guild.id), default_prompt) + prompt_end + "\n".join(f"{msg.author.display_name} ({msg.author.id}): {msg.content}" for msg in reversed(messages))}]}) as response: return(await response.json())["choices"][0]["message"]["content"]
+    except: return("error")
 
 async def tryban(bot_message):
     match = re.search(r"/kill\s+(\d{17,19})", bot_message.content) # Я не ебу как работает регекс
@@ -76,14 +78,11 @@ async def on_ready():
 @bot.event
 async def on_message(message):
     if message.guild is None or message.author == bot.user or (message.author.bot and not reply_to_bots) or (not (bot.user in message.mentions or random.random() < chance)): return
-
-    try:
-        response = await askai(message.channel)
-        bot_message = await message.reply(response)
-        print(f"{message.guild.name} ({message.guild.id}) > {message.channel} ({message.channel.id}) > {message.author.display_name} ({message.author.id}): {message.content}")
-        print(f"{bot.user.display_name} responded: {response}")
-        await tryban(bot_message)
-    except: pass
+    response = await askai(message.channel)
+    bot_message = await message.reply(response)
+    print(f"{message.guild.name} ({message.guild.id}) > {message.channel} ({message.channel.id}) > {message.author.display_name} ({message.author.id}): {message.content}")
+    print(f"{bot.user.display_name} responded: {response}")
+    await tryban(bot_message)
 
 async def console_input():
     while True:
