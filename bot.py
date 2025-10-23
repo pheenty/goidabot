@@ -57,14 +57,21 @@ def setpromptbeh(prompt, server):
     with open("prompts.json", "w", encoding="utf-8") as f:
         json.dump(prompts, f, ensure_ascii=False)
 
-async def askai(channel): # GOIDA
+async def askai(channel):
     messages = [msg async for msg in channel.history(limit=context)]
-    try:
-        async with channel.typing(), aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60)).post("https://api.deepseek.com/v1/chat/completions", headers={"Authorization": f"Bearer {ai_token.strip()}"}, json={"model": "deepseek-chat", "messages":[{"role": "user", "content": prompts.get(str(channel.guild.id), default_prompt) + prompt_end + "\n".join(f"{msg.author.display_name} ({msg.author.id}): {msg.content}" for msg in reversed(messages))}]}) as response: return(await response.json())["choices"][0]["message"]["content"]
-    except: return("error")
+    async with channel.typing():
+        try:
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=60)) as session:
+                async with session.post("https://api.deepseek.com/v1/chat/completions",
+                    headers={"Authorization": f"Bearer {ai_token.strip()}"},
+                    json={"model": "deepseek-chat", "messages": [{"role": "user", "content":
+                        (prompts.get(str(channel.guild.id), default_prompt) + prompt_end + "\n".join(f"{msg.author.display_name} ({msg.author.id}): {msg.content}" for msg in reversed(messages)))}]}) as response:
+                            data = await response.json()
+                            return data["choices"][0]["message"]["content"]
+        except: return("error")
 
 async def tryban(bot_message):
-    match = re.search(r"/kill\s+(\d{17,19})", bot_message.content) # Я не ебу как работает регекс
+    match = re.search(r"/kill\s+(\d{17,19})", bot_message.content) # regex hard dipsick help me
     if match: await ban(await bot_message.guild.fetch_member(int(match.group(1))), datetime.timedelta(seconds=15))
 
 @bot.event
@@ -86,7 +93,7 @@ async def on_message(message):
 
 async def console_input():
     while True:
-        text = await asyncio.get_event_loop().run_in_executor(None, input, "ඞ ") # a very sus ps1
+        text = await asyncio.get_event_loop().run_in_executor(None, input, "ඞ ") # a very sus ps1 (@ in firacode looks the same btw)
         parts = text.split(" ")
         try:
             match parts[0]:
